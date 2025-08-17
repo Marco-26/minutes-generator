@@ -1,0 +1,3 @@
+[submodule "audio-transcriber"]
+	path = audio-transcriber
+	url = https://github.com/Marco-26/audio-transcriber.git

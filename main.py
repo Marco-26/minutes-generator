@@ -1,7 +1,9 @@
-
 from tokenize import Token
 from openai import audio
 from minutes_generator import MinutesGenerator
+
+from audio_transcriber.transcriber import Transcriber
+
 import sys
 import os
 import argparse
@@ -10,7 +12,7 @@ SYSTEM_PROMPT = "Transforma todo o discurso direto do texto fornecido em discurs
 
 parser = argparse.ArgumentParser(description='Generate meeting minutes from a transcript file.')
 parser.add_argument('path', type=str, help='Path to the transcript file')
-parser.add_argument('minutes guidelines', type=str, help='Guidelines for the formation of the minutes', default=SYSTEM_PROMPT)
+parser.add_argument('--minutes guidelines', type=str, help='Guidelines for the formation of the minutes', default=SYSTEM_PROMPT)
 
 TOKEN_LIMIT = 10000
 AUDIO_TYPES = ['mp3', 'wav', 'mp4']
@@ -26,23 +28,18 @@ if __name__ == "__main__":
     print("File doesn't exist...")
     sys.exit()
   
-  minutes_generator = MinutesGenerator(SYSTEM_PROMPT, TOKEN_LIMIT)
+  api_key = os.getenv('OPENAI_API_KEY')
+  minutes_generator = MinutesGenerator(api_key, SYSTEM_PROMPT, TOKEN_LIMIT)
   
   file_type = get_file_type(args.path)
-  print(file_type)
+  
+  meeting_transcription = ''
   
   if file_type in AUDIO_TYPES:
-    # transcribe the file first
-    pass
-    
-  with open(args.path, 'r') as file:
-    meeting_transcription = file.read()
-
-  meeting_chunks = [meeting_transcription[i:i + TOKEN_LIMIT] for i in range(0, len(meeting_transcription), TOKEN_LIMIT)]
-  minutes = []
-  
-  with open('minutes.txt', 'w') as file:
-    for chunk in meeting_chunks:
-      file.write(minutes_generator.generate(chunk))
-  
-  print('Finished writing the minutes')
+    transcriber = Transcriber(api_key, 'OpenAI')
+    meeting_transcription = transcriber.transcribe(args.path)
+  else:
+    with open(args.path, 'r') as file:
+      meeting_transcription = file.read()
+      
+  minutes_generator.generate(meeting_transcription)
